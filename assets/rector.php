@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+use Joomla\Rector\Extension\ExtensionTemplateFactory;
+use Joomla\Rector\FileSystem\AddedFileCollectorService;
+use Joomla\Rector\Joomla3\MVC\ComponentRouterNamespaceRector;
+use Joomla\Rector\Joomla3\MVC\ComponentServiceProviderRector;
 use Joomla\Rector\Joomla3\MVC\Config\JoomlaLegacyPrefixToNamespace;
 use Joomla\Rector\Joomla3\MVC\FileRenameCollectorService;
 use Joomla\Rector\Joomla3\MVC\FormFieldsRector;
@@ -28,12 +32,14 @@ use Joomla\Rector\Joomla6\CmsObjectReturnTypeRector;
 use Joomla\Rector\Joomla6\HtmlViewExceptionHandlingRector;
 use Joomla\Rector\Joomla6\JpathPlatformToJexecRector;
 use Joomla\Rector\Joomla6\Module\DispatcherGetLayoutDataRector;
+use Joomla\Rector\Joomla6\Module\LegacyModuleToJ6Rector;
 use Joomla\Rector\Joomla6\Module\ModuleHelperStaticToHelperFactoryRector;
 use Joomla\Rector\Joomla6\Module\ModuleTmplTypehintRector;
 use Joomla\Rector\Joomla6\Plugin\AllowLegacyListenersRector;
 use Joomla\Rector\Joomla6\Plugin\EventArgumentsToTypedEventRector;
 use Joomla\Rector\Joomla6\Plugin\HandlerReturnToEventResultRector;
 use Joomla\Rector\Joomla6\Plugin\LegacyHandlerSignatureRector;
+use Joomla\Rector\Joomla6\Plugin\PluginServiceProviderRector;
 use Joomla\Rector\Joomla6\SetErrorToExceptionRector;
 use Joomla\Rector\Joomla6\Template\CountModulesRector;
 use Joomla\Rector\Joomla6\Template\DocumentAssetsToWebAssetManagerRector;
@@ -194,6 +200,35 @@ return static function (RectorConfig $rectorConfig): void {
     // Adds @var annotations for the standard layout variables to module template files.
     $rectorConfig->rule(ModuleTmplTypehintRector::class);
 
+    /**
+     * ---------------------------------------------------------------------------------------
+     * Structural plugin and module rules — DISABLED BY DEFAULT
+     * ---------------------------------------------------------------------------------------
+     *
+     * These move and create files, exactly like the Joomla3\MVC block further down. They need
+     * a vendor namespace, which is never guessed, and the services that write the results:
+     * FileRenameCollectorService produces rename.php, AddedFileCollectorService creates the
+     * generated services/provider.php files.
+     *
+     * Run them once, deliberately, on a clean working tree, then execute the generated
+     * rename.php. Read docs/rules.md before enabling this block.
+     */
+
+    // $rectorConfig->disableParallel();
+    // $rectorConfig->singleton(FileRenameCollectorService::class);
+    // $rectorConfig->singleton(AddedFileCollectorService::class);
+    // $rectorConfig->singleton(ExtensionTemplateFactory::class);
+    //
+    // // Converts a legacy module to the namespaced structure with a service provider.
+    // $rectorConfig->ruleWithConfiguration(LegacyModuleToJ6Rector::class, [
+    //     LegacyModuleToJ6Rector::VENDOR_NAMESPACE => 'Acme',
+    // ]);
+    //
+    // // Converts a legacy single file plugin to the namespaced structure with a provider.
+    // $rectorConfig->ruleWithConfiguration(PluginServiceProviderRector::class, [
+    //     PluginServiceProviderRector::VENDOR_NAMESPACE => 'Acme',
+    // ]);
+
     // Extra layout variables your module passes to its templates:
     // $rectorConfig->ruleWithConfiguration(ModuleTmplTypehintRector::class, [
     //     ModuleTmplTypehintRector::EXTRA_VARIABLES => ['items' => '\\stdClass[]'],
@@ -265,6 +300,14 @@ return static function (RectorConfig $rectorConfig): void {
     // $rectorConfig->rule(ViewsTmplMoveRector::class);
     // // Imports Joomla\CMS\MVC\View\HtmlView as BaseHtmlView to avoid a name collision later.
     // $rectorConfig->rule(HtmlViewToBaseHtmlViewRector::class);
+    // // Namespaces the component router and moves it to src/Service/Router.php.
+    // $rectorConfig->ruleWithConfiguration(ComponentRouterNamespaceRector::class, $joomlaNamespaceMaps);
+    //
+    // // Creates services/provider.php and src/Extension/<Name>Component.php. Needs the
+    // // AddedFileCollectorService, which actually writes the generated files.
+    // $rectorConfig->singleton(AddedFileCollectorService::class);
+    // $rectorConfig->singleton(ExtensionTemplateFactory::class);
+    // $rectorConfig->ruleWithConfiguration(ComponentServiceProviderRector::class, $joomlaNamespaceMaps);
 
     /**
      * ---------------------------------------------------------------------------------------

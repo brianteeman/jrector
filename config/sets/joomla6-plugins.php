@@ -14,6 +14,7 @@ use Joomla\Rector\Joomla6\Plugin\AllowLegacyListenersRector;
 use Joomla\Rector\Joomla6\Plugin\EventArgumentsToTypedEventRector;
 use Joomla\Rector\Joomla6\Plugin\HandlerReturnToEventResultRector;
 use Joomla\Rector\Joomla6\Plugin\LegacyHandlerSignatureRector;
+use Joomla\Rector\Joomla6\Plugin\PluginServiceProviderRector;
 use Rector\Config\RectorConfig;
 
 /**
@@ -43,4 +44,9 @@ return static function (RectorConfig $rectorConfig): void {
     $rectorConfig->rule(HandlerReturnToEventResultRector::class);
     // Removes the deprecated $allowLegacyListeners property from subscriber plugins.
     $rectorConfig->rule(AllowLegacyListenersRector::class);
+
+    // Structural: needs a vendor namespace, so it is registered by the user, not here.
+    // $rectorConfig->ruleWithConfiguration(PluginServiceProviderRector::class, [
+    //     PluginServiceProviderRector::VENDOR_NAMESPACE => "Acme",
+    // ]);
 };

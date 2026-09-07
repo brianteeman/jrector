@@ -11,6 +11,7 @@
 declare(strict_types=1);
 
 use Joomla\Rector\Joomla6\Module\DispatcherGetLayoutDataRector;
+use Joomla\Rector\Joomla6\Module\LegacyModuleToJ6Rector;
 use Joomla\Rector\Joomla6\Module\ModuleHelperStaticToHelperFactoryRector;
 use Joomla\Rector\Joomla6\Module\ModuleTmplTypehintRector;
 use Rector\Config\RectorConfig;
@@ -29,4 +30,9 @@ return static function (RectorConfig $rectorConfig): void {
     $rectorConfig->rule(ModuleHelperStaticToHelperFactoryRector::class);
     // Adds @var annotations for the standard layout variables to module template files.
     $rectorConfig->rule(ModuleTmplTypehintRector::class);
+
+    // Structural: needs a vendor namespace, so it is registered by the user, not here.
+    // $rectorConfig->ruleWithConfiguration(LegacyModuleToJ6Rector::class, [
+    //     LegacyModuleToJ6Rector::VENDOR_NAMESPACE => "Acme",
+    // ]);
 };
