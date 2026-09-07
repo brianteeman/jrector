@@ -44,6 +44,19 @@ final class FileRenameCollectorService
     }
 
     /**
+     * Normalises a path for comparison, so C:\a\b and C:/a/b are the same file.
+     *
+     * @param   string  $path  The path to normalise.
+     *
+     * @return  string
+     * @since   1.0.0
+     */
+    private function normalise(string $path): string
+    {
+        return rtrim(str_replace('\\', '/', $path), '/');
+    }
+
+    /**
      * Register a pending file rename.
      *
      * @param   string  $projectRoot  Absolute path to the component root (where rename.php will be written).
@@ -55,6 +68,12 @@ final class FileRenameCollectorService
      */
     public function addRename(string $projectRoot, string $oldPath, string $newPath): void
     {
+        // A file that would move onto itself is not a move. Registering it would produce a
+        // rename.php that only ever prints "SKIP" lines.
+        if ($this->normalise($oldPath) === $this->normalise($newPath)) {
+            return;
+        }
+
         $this->renames[$projectRoot][$oldPath] = $newPath;
     }
 
