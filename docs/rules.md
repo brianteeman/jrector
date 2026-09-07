@@ -13,12 +13,28 @@ This page is an index. The full documentation for each rule — what it changes,
 
 These rules convert a Joomla 3 component to the namespaced Joomla 4 structure. They need a namespace mapping specific to your component and they move files on disk, so they are documented together in [the MVC guide](mvc.md) rather than individually, and they are not part of any rule set.
 
+- [ComponentRouterNamespaceRector](mvc.md) — Namespaces the component router and moves it to `src/Service/Router.php`.
+- [ComponentServiceProviderRector](mvc.md) — Creates `services/provider.php` and `src/Extension/<Name>Component.php`.
 - [FormFieldsRector](mvc.md) — Converts legacy `JFormField` class names into Joomla 4 namespaced ones.
 - [FormRulesRector](mvc.md) — Converts legacy form rule class names into Joomla 4 namespaced ones.
 - [HelpersToJ4Rector](mvc.md) — Converts legacy helper class names into Joomla 4 namespaced ones.
 - [HtmlHelpersRector](mvc.md) — Converts legacy HTML helper class names into Joomla 4 namespaced ones.
 - [LegacyMVCToJ4Rector](mvc.md) — Converts models, views, controllers and tables into their namespaced variants and updates all references across the code base.
 - [ViewsTmplMoveRector](mvc.md) — Registers view layouts so they are moved from `views/<view>/tmpl/` to `tmpl/<view>/`.
+
+## Structural plugin and module rules
+
+Like the MVC rules above, these move and create files rather than only rewriting code. They need a vendor namespace, which is never guessed, and they are therefore not part of any rule set.
+
+- [LegacyModuleToJ6Rector](rules/joomla6.md#legacymoduletoj6rector) — Converts a legacy module to the namespaced structure with a service provider.
+- [PluginServiceProviderRector](rules/joomla6.md#pluginserviceproviderrector) — Converts a legacy single file plugin to the namespaced structure with a service provider.
+
+### How generated and moved files are delivered
+
+Both mechanisms are shared with the MVC rules:
+
+- **Moves** go through `FileRenameCollectorService`, which writes one `rename.php` per project root. Run it once after Rector. It is only written when there is at least one real move — a file that would move onto itself is not registered.
+- **New files** go through `AddedFileCollectorService`, which creates them directly. An existing file is never overwritten, and nothing is written during a `--dry-run`; the run reports what it would create instead.
 
 ## [Joomla 4](rules/joomla4.md)
 

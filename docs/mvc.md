@@ -135,3 +135,46 @@ php src/rename.php
 This script moves the renamed files into their new locations. Review the moved files to ensure they have been placed in the expected locations. Commit these changes as well.
 
 Congratulations — you have now converted the majority of your component to the new Joomla 4 structure. Unless you still need these MVC rules for subsequent refactoring steps, remove them from `rector.php` before continuing with the remaining rules.
+
+## The router and the service provider
+
+Two further rules complete the structure. Both are optional and are added to the same block as the rules above.
+
+### ComponentRouterNamespaceRector
+
+A Joomla 3 component ships `components/com_example/router.php` with a class such as `ExampleRouter extends JComponentRouterBase`. Joomla 4 and later expect `site/src/Service/Router.php` with the class `Router` in `<Namespace>\Site\Service` — verified against `components/com_content/src/Service/Router.php` of Joomla 6.1.2.
+
+The rule renames the class to `Router`, wraps the file in that namespace, and registers the move with the same `FileRenameCollectorService` the other MVC rules use. The router therefore appears in the very same `rename.php`; there is no second script to run.
+
+```php
+$rectorConfig->ruleWithConfiguration(ComponentRouterNamespaceRector::class, $joomlaNamespaceMaps);
+```
+
+A Joomla 3 router that only consists of the legacy `ExampleBuildRoute()` / `ExampleParseRoute()` functions has no class to namespace. Those files are left untouched and have to be rewritten by hand.
+
+### ComponentServiceProviderRector
+
+A Joomla 3 component has neither a service provider nor an extension class. This rule creates both on the administrator side:
+
+- `services/provider.php`
+- `src/Extension/<Name>Component.php`
+
+The templates are derived from `com_banners` of Joomla 6.1.2, reduced to the services every component needs. Category, tag and HTML registry services are deliberately left out — registering a service a component does not provide fails at runtime.
+
+Unlike the other rules this one **creates** files, which needs one extra service:
+
+```php
+use Joomla\Rector\Extension\ExtensionTemplateFactory;
+use Joomla\Rector\FileSystem\AddedFileCollectorService;
+
+$rectorConfig->singleton(AddedFileCollectorService::class);
+$rectorConfig->singleton(ExtensionTemplateFactory::class);
+
+$rectorConfig->ruleWithConfiguration(ComponentServiceProviderRector::class, $joomlaNamespaceMaps);
+```
+
+An existing file is never overwritten, so the rule cannot clobber a provider you already wrote, and running it twice changes nothing. During a `--dry-run` nothing is written; the run prints what it would create.
+
+The component name is taken from the last segment of the configured namespace, so `Acme\Example` produces `ExampleComponent`. If you configure several components at once, the folder name has to match either the legacy prefix or that last segment — otherwise the rule cannot tell which component it is looking at and skips it.
+
+Both rules still leave the manifest to you: `<namespace path="src">` and the `services` folder in `<files>` have to be added by hand, because Rector works on PHP and not on XML.

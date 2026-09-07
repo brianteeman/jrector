@@ -15,8 +15,10 @@ Back to the [rule index](../rules.md).
 - [HtmlViewExceptionHandlingRector](#htmlviewexceptionhandlingrector)
 - [JpathPlatformToJexecRector](#jpathplatformtojexecrector)
 - [LegacyHandlerSignatureRector](#legacyhandlersignaturerector)
+- [LegacyModuleToJ6Rector](#legacymoduletoj6rector)
 - [ModuleHelperStaticToHelperFactoryRector](#modulehelperstatictohelperfactoryrector)
 - [ModuleTmplTypehintRector](#moduletmpltypehintrector)
+- [PluginServiceProviderRector](#pluginserviceproviderrector)
 - [SetErrorToExceptionRector](#seterrortoexceptionrector)
 - [TemplateThisTypehintRector](#templatethistypehintrector)
 
@@ -598,6 +600,85 @@ return static function (RectorConfig $rectorConfig): void {
         LegacyHandlerSignatureRector::EVENT_NAME_MAP => [
             'onAcmeSomething' => \Acme\Event\MyCustomEvent::class,
         ],
+    ]);
+};
+```
+
+---
+
+## LegacyModuleToJ6Rector
+
+**Class:** `Joomla\Rector\Joomla6\Module\LegacyModuleToJ6Rector`
+
+Lifts a legacy module onto the namespaced structure. A legacy module is `mod_<name>/mod_<name>.php` plus an optional `helper.php`, with no `services/provider.php`.
+
+This is a **structural** rule: it moves and creates files. Like the Joomla 3 MVC rules it does not touch the file system directly during the run — moves go into the `rename.php` written by `FileRenameCollectorService`, and new files are created by `AddedFileCollectorService`.
+
+The rule
+
+- namespaces the helper class as `<Vendor>\Module\<Name>\<Client>\Helper\<Name>Helper` and renames it,
+- registers the move of `helper.php` to `src/Helper/<Name>Helper.php`,
+- creates `services/provider.php`.
+
+The provider template is derived from `modules/mod_articles_news/services/provider.php` of Joomla 6.1.2. The client is read from the `client` attribute of the manifest, defaulting to `site`. `mod_latest_news` becomes `LatestNews`.
+
+### Before / After
+
+```php
+// Before: modules/mod_latest_news/helper.php
+class ModLatestNewsHelper
+{
+}
+```
+
+```php
+// After: modules/mod_latest_news/src/Helper/LatestNewsHelper.php (moved by rename.php)
+namespace Acme\Module\LatestNews\Site\Helper;
+
+class LatestNewsHelper
+{
+}
+```
+
+plus a generated `modules/mod_latest_news/services/provider.php`.
+
+### What is NOT changed
+
+- Modules that already have a `services/provider.php`.
+- Modules without a `mod_<name>.php` entry file.
+- Files that are already namespaced.
+- The content of `tmpl/`, language files and the media folder.
+- The manifest. `<namespace path="src">` and the `services` / `src` folders in `<files>` have to be added by hand — Rector works on PHP, not XML.
+- **The dispatcher is not generated.** Its content comes from `mod_<name>.php`, and splitting that into `getLayoutData()` is what `DispatcherGetLayoutDataRector` does once the dispatcher exists.
+
+### Manual follow-up
+
+- The result is **not a runnable module**. Write `src/Dispatcher/Dispatcher.php`, move the body of `mod_<name>.php` into it, then delete the entry file.
+- The namespace in the manifest has to match the one registered in `provider.php` exactly — the most common cause of a module that will not load.
+- Watch the case of folder and file names under `src/`. PSR-4 is case sensitive on Linux and forgiving on Windows.
+
+### Configuration
+
+The vendor namespace is mandatory. Without it the rule does nothing at all, because the `Joomla\` namespace belongs to the core and must not be occupied by third party code.
+
+```php
+// rector.php
+use Joomla\Rector\Extension\ExtensionTemplateFactory;
+use Joomla\Rector\FileSystem\AddedFileCollectorService;
+use Joomla\Rector\Joomla3\MVC\FileRenameCollectorService;
+use Joomla\Rector\Joomla6\Module\LegacyModuleToJ6Rector;
+use Rector\Config\RectorConfig;
+
+return static function (RectorConfig $rectorConfig): void {
+    // The collectors have to be singletons, otherwise every rule gets its own and the
+    // collected moves and files are lost.
+    $rectorConfig->disableParallel();
+    $rectorConfig->singleton(FileRenameCollectorService::class);
+    $rectorConfig->singleton(AddedFileCollectorService::class);
+    $rectorConfig->singleton(ExtensionTemplateFactory::class);
+
+    $rectorConfig->ruleWithConfiguration(LegacyModuleToJ6Rector::class, [
+        LegacyModuleToJ6Rector::VENDOR_NAMESPACE => 'Acme',
     ]);
 };
 ```
@@ -1206,6 +1287,85 @@ return static function (RectorConfig $rectorConfig): void {
     ]);
 };
 ```
+
+---
+
+## PluginServiceProviderRector
+
+**Class:** `Joomla\Rector\Joomla6\Plugin\PluginServiceProviderRector`
+
+Lifts a legacy single file plugin onto the DI based structure. A legacy plugin is `plugins/<group>/<element>/<element>.php` holding a `Plg<Group><Element>` class, with no `services/provider.php`.
+
+This is a **structural** rule: moves go into the `rename.php` written by `FileRenameCollectorService`, new files are created by `AddedFileCollectorService`.
+
+The rule
+
+- namespaces the plugin class as `<Vendor>\Plugin\<Group>\<Name>\Extension\<Name>` and shortens its name,
+- registers the move of the class file to `src/Extension/<Name>.php`,
+- creates `services/provider.php`.
+
+The provider template is derived from `plugins/content/joomla/services/provider.php` of Joomla 6.1.2, including the `$container->lazy()` form that Joomla 6 uses.
+
+### Before / After
+
+```php
+// Before: plugins/content/example/example.php
+class PlgContentExample extends CMSPlugin
+{
+}
+```
+
+```php
+// After: plugins/content/example/src/Extension/Example.php (moved by rename.php)
+namespace Acme\Plugin\Content\Example\Extension;
+
+class Example extends CMSPlugin
+{
+}
+```
+
+plus a generated `plugins/content/example/services/provider.php`.
+
+### What is NOT changed
+
+- Plugins that already have a `services/provider.php`.
+- Plugin classes that are already namespaced.
+- Any PHP file in the plugin folder other than the entry file `<element>.php`.
+- The bodies of the handler methods.
+- Language files and `tmpl/` overrides.
+- The manifest — that needs `<namespace path="src">` and the `services` / `src` folders in `<files>` by hand.
+
+### Manual follow-up
+
+- The result is **not a runnable plugin**. Check the manifest, the language files and the update server.
+- The vendor namespace has to match the one registered in the manifest, otherwise the autoloader will not find the class.
+- If the plugin needs more than the application — a database, a user factory — add the corresponding setter calls to the generated provider, as the core plugins do.
+
+### Configuration
+
+The vendor namespace is mandatory; without it the rule stays off.
+
+```php
+// rector.php
+use Joomla\Rector\Extension\ExtensionTemplateFactory;
+use Joomla\Rector\FileSystem\AddedFileCollectorService;
+use Joomla\Rector\Joomla3\MVC\FileRenameCollectorService;
+use Joomla\Rector\Joomla6\Plugin\PluginServiceProviderRector;
+use Rector\Config\RectorConfig;
+
+return static function (RectorConfig $rectorConfig): void {
+    $rectorConfig->disableParallel();
+    $rectorConfig->singleton(FileRenameCollectorService::class);
+    $rectorConfig->singleton(AddedFileCollectorService::class);
+    $rectorConfig->singleton(ExtensionTemplateFactory::class);
+
+    $rectorConfig->ruleWithConfiguration(PluginServiceProviderRector::class, [
+        PluginServiceProviderRector::VENDOR_NAMESPACE => 'Acme',
+    ]);
+};
+```
+
+Runs sensibly after `PluginSubscriberInterfaceRector` (Joomla 5) and the other plugin rules, which work on the class body rather than its location.
 
 ---
 
