@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<extension type="module" client="site">
+    <name>mod_latest_news</name>
+</extension>
