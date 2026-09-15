@@ -16,35 +16,15 @@ use Joomla\Rector\Joomla3\MVC\HtmlViewToBaseHtmlViewRector;
 use Joomla\Rector\Joomla3\MVC\LegacyMVCToJ4Rector;
 use Joomla\Rector\Joomla3\MVC\RenamedClassHandlerService;
 use Joomla\Rector\Joomla3\MVC\ViewsTmplMoveRector;
-use Joomla\Rector\Joomla3\ViewAssignRefToPropertyRector;
-use Joomla\Rector\Joomla4\JimportRector;
-use Joomla\Rector\Joomla5\ApplicationInputPropertyRector;
-use Joomla\Rector\Joomla5\CurrentUserInterfaceGetUserRector;
-use Joomla\Rector\Joomla5\GetDboToGetDatabaseRector;
-use Joomla\Rector\Joomla5\HtmlViewGetToModelGetRector;
-use Joomla\Rector\Joomla5\LegacyPropertyManagementGetSetRector;
-use Joomla\Rector\Joomla5\PluginPropertyToGetterRector;
-use Joomla\Rector\Joomla5\PluginSubscriberInterfaceRector;
 use Joomla\Rector\Joomla5\TableGetInstanceRector;
-use Joomla\Rector\Joomla5\ToolbarHelperToDocumentToolbarRector;
-use Joomla\Rector\Joomla5\ViewThisTypehintRector;
-use Joomla\Rector\Joomla6\CmsObjectReturnTypeRector;
-use Joomla\Rector\Joomla6\HtmlViewExceptionHandlingRector;
 use Joomla\Rector\Joomla6\JpathPlatformToJexecRector;
-use Joomla\Rector\Joomla6\Module\DispatcherGetLayoutDataRector;
 use Joomla\Rector\Joomla6\Module\LegacyModuleToJ6Rector;
-use Joomla\Rector\Joomla6\Module\ModuleHelperStaticToHelperFactoryRector;
 use Joomla\Rector\Joomla6\Module\ModuleTmplTypehintRector;
 use Joomla\Rector\Joomla6\Plugin\AllowLegacyListenersRector;
 use Joomla\Rector\Joomla6\Plugin\EventArgumentsToTypedEventRector;
-use Joomla\Rector\Joomla6\Plugin\HandlerReturnToEventResultRector;
-use Joomla\Rector\Joomla6\Plugin\LegacyHandlerSignatureRector;
 use Joomla\Rector\Joomla6\Plugin\PluginServiceProviderRector;
-use Joomla\Rector\Joomla6\SetErrorToExceptionRector;
 use Joomla\Rector\Joomla6\Template\CountModulesRector;
 use Joomla\Rector\Joomla6\Template\DocumentAssetsToWebAssetManagerRector;
-use Joomla\Rector\Joomla6\Template\FactoryGetDocumentRector;
-use Joomla\Rector\Joomla6\Template\TemplateThisTypehintRector;
 use Rector\Config\RectorConfig;
 use Rector\Set\ValueObject\LevelSetList;
 use Rector\Set\ValueObject\SetList;
@@ -84,181 +64,20 @@ return static function (RectorConfig $rectorConfig): void {
     /**
      * Refactoring rules to optimize code to Joomla 3.10
      */
-
-    // Replaces $this->assignRef('key', $value) with $this->key = $value in JView subclasses.
-    $rectorConfig->rule(ViewAssignRefToPropertyRector::class);
+    $rectorConfig->sets([
+        __DIR__ . '/vendor/joomla-projects/jrector/config/sets/joomla3.php',
+    ]);
 
     /**
      * Refactoring rules for Joomla 4
      */
     $rectorConfig->sets([
-        // Replace legacy class names with the namespaced ones
-        __DIR__ . '/vendor/joomla-projects/typehints/rector/joomla_4_0.php',
+        __DIR__ . '/vendor/joomla-projects/jrector/config/sets/joomla4.php',
     ]);
-
-    // Removes jimport('joomla.*') calls that are no longer needed in Joomla 4.
-    $rectorConfig->rule(JimportRector::class);
-
-    /**
-     * Refactoring rules for Joomla 5
-     */
-    $rectorConfig->sets([
-        // Replace classes replaced in Joomla 5.0
-        __DIR__ . '/vendor/joomla-projects/typehints/rector/joomla_5_0.php',
-    ]);
-
-    // MVC and application
-    // Replaces $app->input with $app->getInput() where $app comes from getApplication().
-    $rectorConfig->rule(ApplicationInputPropertyRector::class);
-    // Replaces Factory::getUser() with $this->getCurrentUser() in CurrentUserInterface classes.
-    $rectorConfig->rule(CurrentUserInterfaceGetUserRector::class);
-    // Replaces getDbo() calls with getDatabase() in classes using the DatabaseAwareTrait.
-    $rectorConfig->rule(GetDboToGetDatabaseRector::class);
-    // Replaces $this->get('Items') with $model->getItems() in HtmlView classes and adds @var.
-    $rectorConfig->rule(HtmlViewGetToModelGetRector::class);
-    // Replaces $this->get()/set() with direct property access in LegacyPropertyManagementTrait users.
-    $rectorConfig->rule(LegacyPropertyManagementGetSetRector::class);
-    // Replaces Table::getInstance() with direct class instantiation.
-    $rectorConfig->rule(TableGetInstanceRector::class);
-    // Replaces ToolbarHelper::x() static calls with $toolbar->x() in DocumentAwareInterface classes.
-    $rectorConfig->rule(ToolbarHelperToDocumentToolbarRector::class);
-    // Adds a /** @var ViewClass $this */ doc comment to view template files in tmpl directories.
-    $rectorConfig->rule(ViewThisTypehintRector::class);
-
-    // To resolve component-specific table classes, register TableGetInstanceRector with its
-    // component namespace instead of the plain rule() call above:
-    // $rectorConfig->ruleWithConfiguration(TableGetInstanceRector::class, [
-    //     TableGetInstanceRector::COMPONENT_NAMESPACE => 'Acme\\Component\\Example',
-    // ]);
-
-    // Plugins
-    // Replaces $this->app / $this->db with getApplication() / getDatabase() in CMSPlugin subclasses.
-    $rectorConfig->rule(PluginPropertyToGetterRector::class);
-    // Adds SubscriberInterface and getSubscribedEvents() to CMSPlugin subclasses.
-    $rectorConfig->rule(PluginSubscriberInterfaceRector::class);
-
-    /**
-     * Refactoring rules for Joomla 6
-     */
-    $rectorConfig->sets([
-        // Replace classes replaced in Joomla 6.0
-        __DIR__ . '/vendor/joomla-projects/typehints/rector/joomla_6_0.php',
-    ]);
-
-    // MVC and application
-    // Replaces CMSObject with stdClass in return type hints and @return PHPDoc tags.
-    $rectorConfig->rule(CmsObjectReturnTypeRector::class);
-    // Adds $model->setUseException(true) after $this->getModel() and removes getErrors() if-blocks.
-    $rectorConfig->rule(HtmlViewExceptionHandlingRector::class);
-    // Replaces $this->setError('msg') followed by return false with throw new \Exception('msg').
-    $rectorConfig->rule(SetErrorToExceptionRector::class);
-    // Replaces the JPATH_PLATFORM direct access guard with _JEXEC.
-    $rectorConfig->rule(JpathPlatformToJexecRector::class);
-
-    // Also flag other JPATH_PLATFORM usages (path expressions) with a TODO comment:
-    // $rectorConfig->ruleWithConfiguration(JpathPlatformToJexecRector::class, [
-    //     JpathPlatformToJexecRector::MARK_OTHER_USAGES => true,
-    // ]);
-
-    // Plugins
-    // Run these in the given order: the signature rule produces the typed event parameter that
-    // the argument rule needs, and the result rule needs both. PluginSubscriberInterfaceRector
-    // (Joomla 5, above) should have run first.
-    //
-    // Converts a legacy handler signature to the typed event object signature.
-    $rectorConfig->rule(LegacyHandlerSignatureRector::class);
-    // Replaces positional and named event argument access with the typed getters of the event class.
-    $rectorConfig->rule(EventArgumentsToTypedEventRector::class);
-    // Writes a handler return value into the event result instead of returning it.
-    $rectorConfig->rule(HandlerReturnToEventResultRector::class);
-    // Removes the deprecated $allowLegacyListeners property from subscriber plugins.
-    $rectorConfig->rule(AllowLegacyListenersRector::class);
-
-    // The built-in event map only covers the Joomla core events. If your extension defines its
-    // own event classes, register them instead of the plain rule() calls above:
-    // $rectorConfig->ruleWithConfiguration(EventArgumentsToTypedEventRector::class, [
-    //     EventArgumentsToTypedEventRector::EVENT_ARGUMENT_MAP => [
-    //         \Acme\Event\MyCustomEvent::class => ['context', 'item'],
-    //     ],
-    // ]);
-    //
-    // AllowLegacyListenersRector removes the deprecated property by default. To keep it and only
-    // force it to false instead:
-    // $rectorConfig->ruleWithConfiguration(AllowLegacyListenersRector::class, [
-    //     AllowLegacyListenersRector::MODE => AllowLegacyListenersRector::MODE_SET_FALSE,
-    // ]);
-
-    // Modules
-    // These assume a module that already uses the namespaced structure with a dispatcher.
-    // Run `php tools/analyse-legacy-modules.php <path>` to find modules that still need the
-    // structural conversion first.
-    //
-    // Converts a hand written module dispatch() method into getLayoutData().
-    $rectorConfig->rule(DispatcherGetLayoutDataRector::class);
-    // Replaces static module helper calls with the HelperFactory and de-statics the helper.
-    $rectorConfig->rule(ModuleHelperStaticToHelperFactoryRector::class);
-    // Adds @var annotations for the standard layout variables to module template files.
-    $rectorConfig->rule(ModuleTmplTypehintRector::class);
 
     /**
      * ---------------------------------------------------------------------------------------
-     * Structural plugin and module rules — DISABLED BY DEFAULT
-     * ---------------------------------------------------------------------------------------
-     *
-     * These move and create files, exactly like the Joomla3\MVC block further down. They need
-     * a vendor namespace, which is never guessed, and the services that write the results:
-     * FileRenameCollectorService produces rename.php, AddedFileCollectorService creates the
-     * generated services/provider.php files.
-     *
-     * Run them once, deliberately, on a clean working tree, then execute the generated
-     * rename.php. Read docs/rules.md before enabling this block.
-     */
-
-    // $rectorConfig->disableParallel();
-    // $rectorConfig->singleton(FileRenameCollectorService::class);
-    // $rectorConfig->singleton(AddedFileCollectorService::class);
-    // $rectorConfig->singleton(ExtensionTemplateFactory::class);
-    //
-    // // Converts a legacy module to the namespaced structure with a service provider.
-    // $rectorConfig->ruleWithConfiguration(LegacyModuleToJ6Rector::class, [
-    //     LegacyModuleToJ6Rector::VENDOR_NAMESPACE => 'Acme',
-    // ]);
-    //
-    // // Converts a legacy single file plugin to the namespaced structure with a provider.
-    // $rectorConfig->ruleWithConfiguration(PluginServiceProviderRector::class, [
-    //     PluginServiceProviderRector::VENDOR_NAMESPACE => 'Acme',
-    // ]);
-
-    // Extra layout variables your module passes to its templates:
-    // $rectorConfig->ruleWithConfiguration(ModuleTmplTypehintRector::class, [
-    //     ModuleTmplTypehintRector::EXTRA_VARIABLES => ['items' => '\\stdClass[]'],
-    // ]);
-
-    // Templates
-    // Splits countModules() condition strings into individual calls.
-    $rectorConfig->rule(CountModulesRector::class);
-    // Replaces direct document asset calls with the WebAssetManager.
-    $rectorConfig->rule(DocumentAssetsToWebAssetManagerRector::class);
-    // Replaces Factory::getDocument() with the getter that fits the context.
-    // Despite the namespace this applies to views, plugins and services too.
-    $rectorConfig->rule(FactoryGetDocumentRector::class);
-    // Adds the @var $this annotation to index.php, component.php, offline.php and error.php.
-    $rectorConfig->rule(TemplateThisTypehintRector::class);
-
-    // The generated calls keep the old default counting. Pass true as the second argument
-    // instead, i.e. count only modules that actually render content:
-    // $rectorConfig->ruleWithConfiguration(CountModulesRector::class, [
-    //     CountModulesRector::WITH_CONTENT_ONLY => true,
-    // ]);
-    //
-    // Prefix every derived web asset name, e.g. with your vendor:
-    // $rectorConfig->ruleWithConfiguration(DocumentAssetsToWebAssetManagerRector::class, [
-    //     DocumentAssetsToWebAssetManagerRector::ASSET_NAME_PREFIX => 'acme.',
-    // ]);
-
-    /**
-     * ---------------------------------------------------------------------------------------
-     * Structural rules — DISABLED BY DEFAULT
+     * Convert component from Joomla 3 to Joomla 4 — DISABLED BY DEFAULT
      * ---------------------------------------------------------------------------------------
      *
      * The rules below convert a Joomla 3 component to the namespaced Joomla 4 structure. Unlike
@@ -308,6 +127,97 @@ return static function (RectorConfig $rectorConfig): void {
     // $rectorConfig->singleton(AddedFileCollectorService::class);
     // $rectorConfig->singleton(ExtensionTemplateFactory::class);
     // $rectorConfig->ruleWithConfiguration(ComponentServiceProviderRector::class, $joomlaNamespaceMaps);
+
+    /**
+     * ---------------------------------------------------------------------------------------
+     */
+
+    /**
+     * Refactoring rules for Joomla 5
+     */
+    $rectorConfig->sets([
+        __DIR__ . '/vendor/joomla-projects/jrector/config/sets/joomla5.php',
+    ]);
+
+    // To resolve component-specific table classes, register TableGetInstanceRector with its
+    // component namespace instead of the plain rule() call in the above set:
+    // $rectorConfig->ruleWithConfiguration(TableGetInstanceRector::class, [
+    //     TableGetInstanceRector::COMPONENT_NAMESPACE => 'Acme\\Component\\Example',
+    // ]);
+
+    /**
+     * Refactoring rules for Joomla 6
+     */
+    $rectorConfig->sets([
+        __DIR__ . '/vendor/joomla-projects/jrector/config/sets/joomla6.php',
+    ]);
+
+    // Also flag other JPATH_PLATFORM usages (path expressions) with a TODO comment:
+    // $rectorConfig->ruleWithConfiguration(JpathPlatformToJexecRector::class, [
+    //     JpathPlatformToJexecRector::MARK_OTHER_USAGES => true,
+    // ]);
+
+    // Plugins
+    // // The built-in event map only covers the Joomla core events. If your extension defines its
+    // // own event classes, register them instead of the plain rule() calls above:
+    // $rectorConfig->ruleWithConfiguration(EventArgumentsToTypedEventRector::class, [
+    //     EventArgumentsToTypedEventRector::EVENT_ARGUMENT_MAP => [
+    //         \Acme\Event\MyCustomEvent::class => ['context', 'item'],
+    //     ],
+    // ]);
+
+    // // AllowLegacyListenersRector removes the deprecated property by default. To keep it and only
+    // // force it to false instead:
+    // $rectorConfig->ruleWithConfiguration(AllowLegacyListenersRector::class, [
+    //     AllowLegacyListenersRector::MODE => AllowLegacyListenersRector::MODE_SET_FALSE,
+    // ]);
+
+    // Templates
+    // The generated calls keep the old default counting. Pass true as the second argument
+    // instead, i.e. count only modules that actually render content:
+    // $rectorConfig->ruleWithConfiguration(CountModulesRector::class, [
+    //     CountModulesRector::WITH_CONTENT_ONLY => true,
+    // ]);
+
+    // Prefix every derived web asset name, e.g. with your vendor:
+    // $rectorConfig->ruleWithConfiguration(DocumentAssetsToWebAssetManagerRector::class, [
+    //    DocumentAssetsToWebAssetManagerRector::ASSET_NAME_PREFIX => 'acme.',
+    // ]);
+
+
+    /**
+     * ---------------------------------------------------------------------------------------
+     * Structural plugin and module rules — DISABLED BY DEFAULT
+     * ---------------------------------------------------------------------------------------
+     *
+     * These move and create files, exactly like the Joomla3\MVC block further down. They need
+     * a vendor namespace, which is never guessed, and the services that write the results:
+     * FileRenameCollectorService produces rename.php, AddedFileCollectorService creates the
+     * generated services/provider.php files.
+     *
+     * Run them once, deliberately, on a clean working tree, then execute the generated
+     * rename.php. Read docs/rules.md before enabling this block.
+     */
+
+    // $rectorConfig->disableParallel();
+    // $rectorConfig->singleton(FileRenameCollectorService::class);
+    // $rectorConfig->singleton(AddedFileCollectorService::class);
+    // $rectorConfig->singleton(ExtensionTemplateFactory::class);
+    //
+    // // Converts a legacy module to the namespaced structure with a service provider.
+    // $rectorConfig->ruleWithConfiguration(LegacyModuleToJ6Rector::class, [
+    //     LegacyModuleToJ6Rector::VENDOR_NAMESPACE => 'Acme',
+    // ]);
+    //
+    // // Converts a legacy single file plugin to the namespaced structure with a provider.
+    // $rectorConfig->ruleWithConfiguration(PluginServiceProviderRector::class, [
+    //     PluginServiceProviderRector::VENDOR_NAMESPACE => 'Acme',
+    // ]);
+    //
+    // // Extra layout variables your module passes to its templates:
+    // $rectorConfig->ruleWithConfiguration(ModuleTmplTypehintRector::class, [
+    //     ModuleTmplTypehintRector::EXTRA_VARIABLES => ['items' => '\\stdClass[]'],
+    // ]);
 
     /**
      * ---------------------------------------------------------------------------------------

@@ -25,7 +25,12 @@ use Rector\Config\RectorConfig;
  */
 return static function (RectorConfig $rectorConfig): void {
     $rectorConfig->sets([
-        JoomlaSetList::JOOMLA_6_PLUGINS,
+        // Replace classes replaced in Joomla 6.0
+        __DIR__ . '/../../../typehints/rector/joomla_6_0.php',
+    ]);
+
+    $rectorConfig->sets([
+        //JoomlaSetList::JOOMLA_6_PLUGINS,
         JoomlaSetList::JOOMLA_6_MODULES,
         JoomlaSetList::JOOMLA_6_TEMPLATES,
     ]);

@@ -29,6 +29,11 @@ use Rector\Config\RectorConfig;
  * table classes, register it separately with its `component_namespace` option instead.
  */
 return static function (RectorConfig $rectorConfig): void {
+    $rectorConfig->sets([
+        // Replace classes replaced in Joomla 5.0
+        __DIR__ . '/../../../typehints/rector/joomla_5_0.php',
+    ]);
+
     // MVC and application
     // Replaces $app->input with $app->getInput() where $app comes from getApplication().
     $rectorConfig->rule(ApplicationInputPropertyRector::class);

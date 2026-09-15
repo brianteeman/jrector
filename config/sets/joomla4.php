@@ -19,4 +19,9 @@ use Rector\Config\RectorConfig;
 return static function (RectorConfig $rectorConfig): void {
     // Removes jimport('joomla.*') calls that are no longer needed in Joomla 4.
     $rectorConfig->rule(JimportRector::class);
+
+    $rectorConfig->sets([
+        // Replace legacy class names with the namespaced ones
+        __DIR__ . '/../../../typehints/rector/joomla_4_0.php',
+    ]);
 };
